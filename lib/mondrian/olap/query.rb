@@ -300,6 +300,14 @@ module Mondrian
         if members.length == 1 && members[0][-1,1] != ']'
           members[0]
         elsif members[0].is_a?(Symbol)
+          # HACK HACK HACK
+          # If an incoming query contains dimension text or regex filters, we want to use the nonempty_crossjoin
+          # in order to avoid Mondrian potentially creating massive amounts of tuples when loading members
+          # in the case of high cardinality dimensions with lots of distinct members
+          if members[0] == :crossjoin && members.flatten.detect{|m|m =~ /InStr|MATCHES/}
+            members[0] = :nonempty_crossjoin
+          end
+
           case members[0]
           when :crossjoin
             "CROSSJOIN(#{members_to_mdx(members[1])}, #{members_to_mdx(members[2])})"
